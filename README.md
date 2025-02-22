@@ -37,7 +37,7 @@ conda activate FAST
 python main.py --config_path "./params.json"
 
 # Testing mode (with pretrained model)
-python main.py --config_path "./checkpoint/model_name/config.json"
+python main.py --config_path "./checkpoint/model_name/config.json" --test_path "./data/test/test_dir"
 ```
 
 ### GUI Mode
