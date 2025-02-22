@@ -4,14 +4,16 @@ def args2json(args,path):
     with open(path, mode = "w") as f:
         json.dump(args.__dict__, f, indent = 4)
 
-def json2args(path):
-    parser = ArgumentParser(description = 'DeepFlow PyTorch')
-    args = parser.parse_args()
-    args_dict = vars(args)
-    with open(path, 'rt') as f:
-        args_dict.update(json.load(f))
+def json2args(config_path):
+    import json
+    with open(config_path, 'r') as f:
+        params = json.load(f)
 
-    return args
+    class Namespace:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    return Namespace(**params)
 
 def load_config(args,path):
     pass
