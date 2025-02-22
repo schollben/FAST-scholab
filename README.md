@@ -2,7 +2,9 @@
 <p align="center">
   <img src="./FAST_logo.png" alt="FAST Logo" width="600"/>
 </p>
-![Python](https://img.shields.io/badge/Python-3.9-blue) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)(https://www.gnu.org/licenses/gpl-3.0)
+![Python](https://img.shields.io/badge/Python-3.9-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 FAST is a real-time self-supervised denoising framework for fluorescence neural imaging, achieving enhanced image quality in low-SNR scenarios through spatiotemporal joint optimization.
 
