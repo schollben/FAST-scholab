@@ -1,5 +1,7 @@
 # FAST: FrAme-multiplexed SpatioTemporal Learning Strategy
-
+<p align="center">
+  <img src="./FAST_logo.png" alt="FAST Logo" width="600"/>
+</p>
 ![Python](https://img.shields.io/badge/Python-3.9-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -50,12 +52,38 @@ python Test_GUI.py
 ## 📁 Directory Structure
 ```
 FAST/
-├── data/
-│   └── train/          # Training data
 ├── checkpoint/         # Model checkpoints
-├── result/            # Output results
-├── src/               # Source code
-└── configs/           # Configuration files
+│   └── model_name
+├── data/              # Data directory
+│   ├── test/          # Testing data
+│   └── train/         # Training data
+├── datasets/          # Dataset processing
+│   ├── dataAug.py     # Data augmentation
+│   ├── data_process.py
+│   └── dataset.py     # Dataset classes
+├── environment.yml    # Environment configuration
+├── FAST_logo.png     # Project logo
+├── log.txt           # Runtime logs
+├── main.py           # Main entry point
+├── models/           # Model architectures
+│   ├── baseLayers.py
+│   ├── loss/         # Loss functions
+│   │   └── loss.py
+│   └── Unet_Lite.py  # Main model
+├── params.json       # Configuration file
+├── result/           # Output results
+│   └── model_name
+├── Test_GUI.py       # GUI for testing
+├── test_in_gui.py
+├── test.py          # Testing script
+├── Train_GUI.py      # GUI for training
+├── train_in_gui.py
+├── train.py         # Training script
+└── utils/           # Utility functions
+    ├── config.py    # Configuration utils
+    ├── fileSplit.py
+    ├── general.py   # General utilities
+    └── __init__.py
 ```
 
 ## ⚙️ Configuration
@@ -114,8 +142,8 @@ See [LICENSE](LICENSE) file for full text.
 ## ❓ FAQ
 
 <details>
-<summary>To do</summary>
---
+<summary>Coming soon</summary>
+
 </details>
 
 
@@ -123,7 +151,7 @@ See [LICENSE](LICENSE) file for full text.
 ## 📮 Contact
 
 - 📧 Email: yiqunwang22@fudan.edu.cn
-- 🌐 Project Page: [GitHub Repository](https://github.com/yourusername/FAST)
+- 🌐 Project Page: [GitHub Repository](https://github.com/FDU-donglab/FAST)
 
 ---
 
