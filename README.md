@@ -1,4 +1,6 @@
 # FAST: FrAme-multiplexed SpatioTemporal Learning Strategy
+<p align="center">
+  <img src="./FAST_logo.png" alt="FAST Logo" width="600"/>
 
 ![Python](https://img.shields.io/badge/Python-3.9-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange)
