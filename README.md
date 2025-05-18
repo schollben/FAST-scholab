@@ -162,7 +162,7 @@ If you use FAST in your research, please cite our paper:
 ```bibtex
 @article{wang2024real,
     title={Real-time self-supervised denoising for high-speed fluorescence neural imaging},
-    author={Wang, Yiqun and Others},
+    author={Yiqun Wang and Others},
     journal={https://doi.org/10.21203/rs.3.rs-6101322/v1},
     year={2025}
 }
