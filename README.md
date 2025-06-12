@@ -25,8 +25,9 @@ FAST is a real-time self-supervised denoising framework for fluorescence neural 
 ### Quick Setup
 ```bash
 # Create and activate environment
-conda env create -f environment.yml
+conda create -n FAST python=3.9
 conda activate FAST
+pip install -r requirements.txt
 ```
 
 ## 🚀 Quick Start
