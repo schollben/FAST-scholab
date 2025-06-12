@@ -22,12 +22,30 @@ FAST is a real-time self-supervised denoising framework for fluorescence neural 
 - PyTorch 2.x (CUDA version aligned with your hardware)
 - CUDA-capable GPU (recommended)
 
+#### Tested Environments
+- **Windows 10**: NVIDIA RTX 3060, RTX 3090, RTX 4070
+- **Ubuntu 22.04**: NVIDIA RTX A6000
+- **CUDA Version**: 12.4
+  
+#### Detailed Package Versions
+```
+numpy==1.24.1
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==2.5.1
+scikit-image==0.24.0
+tqdm==4.66.5
+pyqt5==5.15.7
+pyqt5-qt5==5.15.2
+pyqt5-sip==12.11.0
+csbdeep==0.8.1
+```
+
 ### Quick Setup
 ```bash
 # Create and activate environment
-conda create -n FAST python=3.9
+conda env create -f environment.yml
 conda activate FAST
-pip install -r requirements.txt
 ```
 
 ## 🚀 Quick Start
