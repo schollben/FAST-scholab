@@ -137,7 +137,7 @@ Customize model parameters by modifying `params.json`:
    Place one or more `.tif`/`.tiff` files (each should be an xy-t stack, ideally >1000 frames per file) into a new folder under `./data/train/`, e.g., `./data/train/MyTrainDataset/`.
 
 2. **Edit Configuration**  
-   Open `params.json` and set `"train_folder": "path/to/MyTrainDataset"`. Adjust other parameters as needed—see the [Configuration](#-configuration) section for details on each option.
+   Open `params.json` and set `"train_folder": "path/to/MyTrainDataset"`. Adjust other parameters as needed—see the [Configuration](#configuration) section for details on each option.
 
 3. **Start Training**  
    Run the following command to train the model:
