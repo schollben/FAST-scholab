@@ -44,8 +44,9 @@ csbdeep==0.8.1
 ### Quick Setup
 ```bash
 # Create and activate environment
-conda env create -f environment.yml
+conda create -n FAST python=3.9
 conda activate FAST
+pip install -r requirements.txt
 ```
 
 ## 🚀 Quick Start
@@ -127,6 +128,37 @@ Customize model parameters by modifying `params.json`:
     "batch_size": 1
 }
 ```
+
+## 📝 Usage Guide
+
+### Training a Model on Your Own Data (3 Steps)
+
+1. **Prepare Training Data**  
+   Place one or more `.tif`/`.tiff` files (each should be an xy-t stack, ideally >1000 frames per file) into a new folder under `./data/train/`, e.g., `./data/train/MyTrainDataset/`.
+
+2. **Edit Configuration**  
+   Open `params.json` and set `"train_folder": "path/to/MyTrainDataset"`. Adjust other parameters as needed—see the [Configuration](#-configuration) section for details on each option.
+
+3. **Start Training**  
+   Run the following command to train the model:
+   ```bash
+   python main.py --config_path "./params.json"
+   ```
+   After training, model weights and the config file will be saved in `./checkpoint/model_name/`.
+
+---
+
+### Using Your Trained FAST Model for Denoising (2 Steps)
+
+1. **Prepare Test Data**  
+   Place one or more `.tif`/`.tiff` files (xy-t stacks to be denoised) into a folder under `./data/test/`, e.g., `./data/test/MyTestDataset/`.
+
+2. **Run Inference**  
+   Use the following command to denoise your data with the trained model:
+   ```bash
+   python main.py --config_path "./checkpoint/model_name/config.json" --test_path "./data/test/MyTestDataset"
+   ```
+   After completion, you will find the processed results in the `./result/model_name` directory.
 
 ## 🤝 Contributing
 
