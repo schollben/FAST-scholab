@@ -85,16 +85,25 @@ def load3DImages2Tensor(dataPath: str, dataExtension: str, trainFrames: int = -1
         imDir = dataPath + '//' + imName
         try:
             if dataExtension in ['tif', 'tiff']:
-                image = io.imread(imDir)
+                # Memory-efficient loading: only load required frames
+                if trainFrames != -1:
+                    import tifffile
+                    with tifffile.TiffFile(imDir) as tif:
+                        num_frames = len(tif.pages)
+                        frames_to_load = min(trainFrames, num_frames)
+                        print(f'Loading {frames_to_load} of {num_frames} frames')
+                        # Load only the required frames
+                        image = tif.asarray(key=range(frames_to_load))
+                else:
+                    # Load all frames if trainFrames not specified
+                    image = io.imread(imDir)
 
             print('image shape:', image.shape)
 
-            if trainFrames != -1 and image.shape[0] > trainFrames:
-                image = image[:trainFrames, ...]
-
             imageTensor = torch.from_numpy(image / 1.0).float()
             imageAll.append(imageTensor)
-        except:
+        except Exception as e:
+            print(f'Error loading {imName}: {e}')
             pass
     return imageAll
 
