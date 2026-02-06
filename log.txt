@@ -1,0 +1,31 @@
+2026-02-05 13:52:26 ===> ------This is all argsurations------
+2026-02-05 13:52:26 ===> data_extension=tif
+2026-02-05 13:52:26 ===> epochs=100
+2026-02-05 13:52:26 ===> miniBatch_size=4
+2026-02-05 13:52:26 ===> withGT=False
+2026-02-05 13:52:26 ===> lr=0.0001
+2026-02-05 13:52:26 ===> weight_decay=0.9
+2026-02-05 13:52:26 ===> amsgrad=True
+2026-02-05 13:52:26 ===> gpu_ids=0
+2026-02-05 13:52:26 ===> train=False
+2026-02-05 13:52:26 ===> test=True
+2026-02-05 13:52:26 ===> local_rank=0
+2026-02-05 13:52:26 ===> results_dir=
+2026-02-05 13:52:26 ===> train_folder=/mnt/bigdata/test
+2026-02-05 13:52:26 ===> train_frames=2000
+2026-02-05 13:52:26 ===> val_folder=/mnt/bigdata/test
+2026-02-05 13:52:26 ===> data_type=3D
+2026-02-05 13:52:26 ===> denoising_strategy=FAST
+2026-02-05 13:52:26 ===> test_folder=
+2026-02-05 13:52:26 ===> checkpoint_path=
+2026-02-05 13:52:26 ===> seed=123
+2026-02-05 13:52:26 ===> save_freq=25
+2026-02-05 13:52:26 ===> is_distribute=False
+2026-02-05 13:52:26 ===> clip_gradients=20.0
+2026-02-05 13:52:26 ===> mode=train
+2026-02-05 13:52:26 ===> num_workers=0
+2026-02-05 13:52:26 ===> batch_size=1
+2026-02-05 13:52:26 ===> -------This is a halving line------
+2026-02-05 13:52:26 ===> Training Start!!!
+2026-02-05 13:52:26 ===> 
+          Epoch        GPU_mem     total_loss
