@@ -9,7 +9,7 @@ import os
 import torch
 
 FASTdir = '/home/schollab-gaga/Documents/FAST'
-dataDir = '/mnt/bigdata/BRUKER/TSeries-07132025-1042-002/001'
+dataDir = '/mnt/bigdata/BRUKER/TSeries-07132025-1042-002'
 
 # ===== CONFIGURATION =====
 CONFIG_PATH = FASTdir + '/inference_params.json'

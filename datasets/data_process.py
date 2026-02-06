@@ -81,6 +81,10 @@ def load3DImages2Tensor(dataPath: str, dataExtension: str, trainFrames: int = -1
     imageAll = []
 
     for imName in list(os.walk(dataPath, topdown=False))[-1][-1]:
+        # Skip non-TIF files
+        if not (imName.lower().endswith('.tif') or imName.lower().endswith('.tiff')):
+            continue
+
         print('load image name -----> ', imName)
         imDir = dataPath + '//' + imName
         try:

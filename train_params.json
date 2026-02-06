@@ -12,7 +12,7 @@
     "local_rank": 0,
     "results_dir": "",
     "train_folder": "",
-    "train_frames": 2000,
+    "train_frames": 4000,
     "val_folder": "",
     "data_type": "3D",
     "denoising_strategy": "FAST",

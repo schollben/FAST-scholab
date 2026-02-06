@@ -27,16 +27,18 @@ def goTesting(args):
 
     # Use results_dir if specified, otherwise use default ./result/ directory
     if args.results_dir and args.results_dir.strip():
-        testSave_dir = os.path.join(args.results_dir, f'models_{os.path.basename(args.train_folder)}')
+        # Use test_path for output directory name
+        testSave_dir = os.path.join(args.results_dir, f'models_{os.path.basename(args.test_path)}')
     else:
-        filename = f'models_{os.path.basename(args.train_folder)}'
+        # Use test_path for output directory name
+        filename = f'models_{os.path.basename(args.test_path)}'
         testSave_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'result', filename)
     os.makedirs(testSave_dir, exist_ok=True)
 
     test_loader = DataLoader(
         dataset=test_set,
         batch_size=args.batch_size,
-        drop_last=True,
+        drop_last=False,  # Don't drop last batch during testing
         num_workers=args.num_workers,
         pin_memory=True
     )
