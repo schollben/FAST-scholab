@@ -7,22 +7,28 @@ from test import goTesting
 from utils.config import json2args
 import os
 import torch
-import argparse
+
+FASTdir = '/home/schollab-gaga/Documents/FAST'
+dataDir = '/mnt/bigdata/BRUKER/TSeries-07132025-1042-002/001'
+
+# ===== CONFIGURATION =====
+CONFIG_PATH = FASTdir + '/inference_params.json'
+TRAIN_DATA_PATH = dataDir
+TEST_DATA_PATH = dataDir
+# =========================
 
 
 def print_mode(mode):
     print(f"Running in {mode} mode")
 
-
 def validate_path(path):
     if not path or not os.path.exists(path):
         raise ValueError(f"Invalid path: {path}")
 
-
-def main(config_path="./params.json", test_path=None):
+def main():
     try:
-        print(f"Load configuration file path: {config_path}")
-        args = json2args(config_path)
+        print(f"Load configuration file path: {CONFIG_PATH}")
+        args = json2args(CONFIG_PATH)
 
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_ids
         assert torch.cuda.is_available(), "Currently, we only support CUDA version"
@@ -30,29 +36,22 @@ def main(config_path="./params.json", test_path=None):
         torch.backends.cudnn.benchmark = True
 
         if args.mode == "train":
+            args.train_folder = TRAIN_DATA_PATH
+            validate_path(args.train_folder)
             print_mode("Training")
+            print(f"Training data path: {args.train_folder}")
             goTraining(args)
         elif args.mode == "test":
-            args.test_path = test_path
+            args.test_path = TEST_DATA_PATH
             validate_path(args.test_path)
             print_mode("Testing")
+            print(f"Test data path: {args.test_path}")
             goTesting(args)
         else:
             raise ValueError(f"Invalid mode: {args.mode}")
     except Exception as e:
         print(f"Error: {e}")
-
+        raise
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config-path', '--config_path',
-                        dest='config_path',
-                        type=str,
-                        default='./params.json')
-    parser.add_argument('--test-path', '--test_path',
-                        dest='test_path',
-                        type=str,
-                        default=None)
-    cmd_args = parser.parse_args()
-
-    main(config_path=cmd_args.config_path, test_path=cmd_args.test_path)
+    main()

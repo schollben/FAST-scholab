@@ -25,8 +25,12 @@ def goTesting(args):
     num_gpu = (len(args.gpu_ids.split(",")) + 1) // 2
     inputFileNames = [f for f in os.listdir(args.test_path) if os.path.isfile(os.path.join(args.test_path, f))]
 
-    filename = f'models_{os.path.basename(args.train_folder)}'
-    testSave_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'result', filename)
+    # Use results_dir if specified, otherwise use default ./result/ directory
+    if args.results_dir and args.results_dir.strip():
+        testSave_dir = os.path.join(args.results_dir, f'models_{os.path.basename(args.train_folder)}')
+    else:
+        filename = f'models_{os.path.basename(args.train_folder)}'
+        testSave_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'result', filename)
     os.makedirs(testSave_dir, exist_ok=True)
 
     test_loader = DataLoader(

@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# R
+.Rhistory
+.RData
+
+# Checkpoints and results
+checkpoint/
+result/
+
+# Logs
+*.log
+log.txt
+
+# Temporary files
+*.tmp
+*.bak
+old_*.py
+
+# Shell scripts (optional - remove if you want to track these)
+*.sh
