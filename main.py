@@ -1,20 +1,40 @@
 # Copyright (C) [2025] [Yiqun Wang]
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
 from train import goTraining
 from test import goTesting
 from utils.config import json2args
 import os
 import torch
-
-FASTdir = '/home/schollab-gaga/Documents/FAST'
-dataDir = '/mnt/bigdata/BRUKER/TSeries-07132025-1042-002'
+import json
 
 # ===== CONFIGURATION =====
-CONFIG_PATH = FASTdir + '/inference_params.json'
-TRAIN_DATA_PATH = dataDir
-TEST_DATA_PATH = dataDir
+#update plan:  hazy-brewing-squirrel.md
+
+train = False
+test = True
+
+dataFolder = '/mnt/bigdata/BRUKER/TSeries-07132025-1042-002/'
+FASTdir = '/home/schollab-gaga/Documents/FAST'
+TRAIN_DATA_PATH = dataFolder + 'training/'
+TEST_DATA_PATH = dataFolder + 'registered/'
+
+#update json
+if train:
+    CONFIG_PATH = FASTdir + '/params.json'
+    with open(CONFIG_PATH, 'r') as f:
+        params = json.load(f)    
+    params['results_dir'] = dataFolder
+    params['train_frames'] = 1000
+    params['miniBatch_size'] = 8
+    params['batch_size'] = 1
+    params['num_workers'] = 16
+    params['save_freq'] = 10
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(params, f, indent=4)
+elif test:
+    CONFIG_PATH = '/home/schollab-gaga/Documents/FAST/checkpoint/202602111509/config.json' #where saved config file from training
+
 # =========================
 
 

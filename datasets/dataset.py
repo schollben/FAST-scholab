@@ -23,14 +23,12 @@ class ReadDatasets(Dataset):
         self.inputFileNames = glob.glob(os.path.join(dataPath, '*.tif')) + glob.glob(os.path.join(dataPath, '*.tiff'))
         self.trainFrames = trainFrames
         if mode in ['train', 'test']:
-            # Only limit frames for training, not for test (test processes full stacks)
-            frames_to_load = self.trainFrames if mode == 'train' else -1
-            self.imageAll = load3DImages2Tensor(dataPath=dataPath, dataExtension=dataExtension, trainFrames=frames_to_load)
+            self.imageAll = load3DImages2Tensor(dataPath=dataPath, dataExtension=dataExtension, trainFrames=self.trainFrames)
             self.inputsNum = len(self.imageAll)
         elif mode == 'val':
-            self.imageAll_gt = load3DImages2Tensor(dataPath=dataPath, dataExtension=dataExtension, trainFrames=self.trainFrames)
+            self.imageAll_gt = load3DImages2Tensor(dataPath=dataPath, dataExtension=dataExtension)
             path_raw = dataPath.replace("gt", "train")
-            self.imageAll_raw = load3DImages2Tensor(dataPath=path_raw, dataExtension=dataExtension, trainFrames=self.trainFrames)
+            self.imageAll_raw = load3DImages2Tensor(dataPath=path_raw, dataExtension=dataExtension)
             self.inputsNum = len(self.imageAll_raw)
 
     def __getitem__(self, item):
