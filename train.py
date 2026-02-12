@@ -94,6 +94,8 @@ def goTraining(args):
                 loss_all.backward()
                 optimizer.step()
 
+        torch.cuda.empty_cache()
+
         # Validation and Model Saving
         if (epoch + 1) % int(args.save_freq) == 0:
             model.eval()

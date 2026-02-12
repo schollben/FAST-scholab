@@ -60,7 +60,7 @@ def h5_to_tiff(h5_path, max_frames=None, chunk_size=10000):
                     if (i - start_frame) % 1000 == 0:
                         print(f"  Processing frame {i - start_frame}/{chunk_frames}...")
                     curfr = dataset[i, :, :].astype(np.int16)
-                    tif.write(curfr)
+                    tif.write(curfr, contiguous=True)
 
             print(f"  Successfully saved {chunk_frames} frames to {chunk_output}")
 

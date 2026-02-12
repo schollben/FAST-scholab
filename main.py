@@ -19,22 +19,28 @@ FASTdir = '/home/schollab-gaga/Documents/FAST'
 TRAIN_DATA_PATH = dataFolder + 'training/'
 TEST_DATA_PATH = dataFolder + 'registered/'
 
+if train: 
+    CONFIG_PATH = FASTdir + '/userparams.json'
+elif test: 
+    #SPECIFY TEST CONFIG PATH EACH TIME RIGHT NOW AND FIX LATER
+    CONFIG_PATH = '/home/schollab-gaga/Documents/FAST/checkpoint/202602120922/config.json' #where saved config file from training
+
+
 #update json
-if train:
-    CONFIG_PATH = FASTdir + '/params.json'
-    with open(CONFIG_PATH, 'r') as f:
-        params = json.load(f)    
-    params['results_dir'] = dataFolder
+with open(CONFIG_PATH, 'r') as f:
+    params = json.load(f) 
+if train:   
     params['train_frames'] = 1000
     params['miniBatch_size'] = 8
     params['batch_size'] = 1
     params['num_workers'] = 16
-    params['save_freq'] = 10
-    with open(CONFIG_PATH, 'w') as f:
-        json.dump(params, f, indent=4)
+    params['save_freq'] = 25
+    params['epochs'] = 100
 elif test:
-    CONFIG_PATH = '/home/schollab-gaga/Documents/FAST/checkpoint/202602111509/config.json' #where saved config file from training
+        params['results_dir'] = dataFolder
 
+with open(CONFIG_PATH, 'w') as f:
+    json.dump(params, f, indent=4)
 # =========================
 
 
