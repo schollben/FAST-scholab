@@ -19,25 +19,34 @@ FASTdir = '/home/schollab-gaga/Documents/FAST'
 TRAIN_DATA_PATH = dataFolder + 'training/'
 TEST_DATA_PATH = dataFolder + 'registered/'
 
-if train: 
+if train:
     CONFIG_PATH = FASTdir + '/userparams.json'
-elif test: 
-    #SPECIFY TEST CONFIG PATH EACH TIME RIGHT NOW AND FIX LATER
-    CONFIG_PATH = '/home/schollab-gaga/Documents/FAST/checkpoint/202602120922/config.json' #where saved config file from training
+elif test:
+    # Auto-find the most recent config.json from dataFolder/checkpoint/
+    checkpoint_root = os.path.join(dataFolder, 'checkpoint')
+    if not os.path.isdir(checkpoint_root):
+        raise FileNotFoundError(f"No checkpoint directory found at {checkpoint_root}")
+    # Pick the latest timestamped subfolder
+    subdirs = sorted([d for d in os.listdir(checkpoint_root)
+                      if os.path.isdir(os.path.join(checkpoint_root, d))])
+    if not subdirs:
+        raise FileNotFoundError(f"No checkpoint subdirectories in {checkpoint_root}")
+    CONFIG_PATH = os.path.join(checkpoint_root, subdirs[-1], 'config.json')
 
 
 #update json
 with open(CONFIG_PATH, 'r') as f:
     params = json.load(f) 
-if train:   
-    params['train_frames'] = 2000
+if train:
+    params['train_frames'] = 1000
     params['miniBatch_size'] = 8
     params['batch_size'] = 1
     params['num_workers'] = 16
     params['save_freq'] = 10
-    params['epochs'] = 10
+    params['epochs'] = 10 #set to 100 for actual running
+    params['results_dir'] = dataFolder
 elif test:
-        params['results_dir'] = dataFolder
+    params['results_dir'] = dataFolder
 
 with open(CONFIG_PATH, 'w') as f:
     json.dump(params, f, indent=4)

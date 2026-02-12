@@ -44,9 +44,10 @@ def goTraining(args):
     val_loader = DataLoader(dataset=val_set, batch_size=args.batch_size, drop_last=True, num_workers=args.num_workers,
                             pin_memory=True)
 
-    # Define checkpoint directory
-    checkpoint_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'checkpoint',
-                                  os.path.basename(args.train_folder) + datetime.datetime.now().strftime("%Y%m%d%H%M"))
+    # Define checkpoint directory in the dataset folder (parent of train_folder)
+    data_root = os.path.dirname(os.path.normpath(args.train_folder))
+    checkpoint_dir = os.path.join(data_root, 'checkpoint',
+                                  datetime.datetime.now().strftime("%Y%m%d%H%M"))
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
