@@ -30,12 +30,12 @@ elif test:
 with open(CONFIG_PATH, 'r') as f:
     params = json.load(f) 
 if train:   
-    params['train_frames'] = 1000
+    params['train_frames'] = 2000
     params['miniBatch_size'] = 8
     params['batch_size'] = 1
     params['num_workers'] = 16
-    params['save_freq'] = 25
-    params['epochs'] = 100
+    params['save_freq'] = 10
+    params['epochs'] = 10
 elif test:
         params['results_dir'] = dataFolder
 
