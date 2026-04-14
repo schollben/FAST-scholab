@@ -1,29 +1,73 @@
 # Copyright (C) [2025] [Yiqun Wang]
 # SPDX-License-Identifier: GPL-3.0-or-later
+# # updated by Scholl Lab, 2025-07-13
+# FAST Pipeline Main Module
+
+# This module orchestrates the complete FAST (Fluorescence Analysis and Source Tracking) 
+# pipeline for processing two-photon microscopy data. It handles the conversion of HDF5 
+# registered data to training formats, model training, inference on test data, and 
+# conversion of results back to HDF5 format.
+
+# PREREQUISITES:
+#     - Motion correction must be completed FIRST
+#     - Input data must contain a 'registered.h5' file (output from motion correction)
+#     - CUDA-compatible GPU is required
+#     - All dependencies from requirements.txt installed
+#     - userparams.json configuration file present in FAST_DIR
+#     - This script should be run with the FAST environment activated
+#     - to WATCH GPU use this command in terminal: 'watch -n 1 nvidia-smi'
+
+# WORKFLOW:
+#     1. Convert registered.h5 to TIFF stacks for processing
+#     2. Train deep learning model on selected frames
+#     3. Run inference (testing) on all registered data
+#     4. Convert denoised results back to inference.h5
+#     5. Generate example TIFF output and cleanup intermediate files
+
+# INPUT:
+#     - DATA_FOLDERS: List of paths containing registered.h5 files
+#     - Each folder should contain output from motion correction pipeline
+
+# OUTPUT (per folder):
+#     - checkpoint/: Trained model weights and configuration
+#     - inference.h5: Denoised output in HDF5 format
+#     - *.tif: Example result TIFF stack
+
+# NOTES:
+#     - CUDA is mandatory; CPU-only execution is not supported
+#     - WATCH GPU MEMORY WITH THIS COMMAND IN BASH: watch -n 2 nvidia-smi 
+#     - Training time depends on dataset size and GPU memory
+#     - Intermediate TIFF directories are automatically deleted post-processing
 
 import os
 import json
 import shutil
 import glob
-import tkinter as tk
-from tkinter import filedialog, messagebox
 import torch
 from train import goTraining
 from test import goTesting
 from utils.config import json2args
 from utils.h5_utils import h5_to_tiff, tif_stacks_to_h5
 
+# ===== DATA FOLDERS TO PROCESS =====
+# Add paths to folders containing registered.h5 (one per line)
+DATA_FOLDERS = [
+    '/mnt/bigdata/BRUKER/TSeries-04022026-1315-003/',
+    # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-005/',
+    # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-003/',
+]
+# ====================================
+
 # ===== CONFIGURATION =====
 FAST_DIR = '/home/schollab-gaga/Documents/FAST'
 BASE_CONFIG_PATH = os.path.join(FAST_DIR, 'userparams.json')
-
 # Training hyperparameters
 TRAIN_FRAMES = 1000
-MINIBATCH_SIZE = 8
+MINIBATCH_SIZE = 16 
 BATCH_SIZE = 1
 NUM_WORKERS = 16
-SAVE_FREQ = 10
-EPOCHS = 10  # set to 100 for actual running
+SAVE_FREQ = 25
+EPOCHS = 100
 # =========================
 
 
@@ -45,6 +89,9 @@ def process_folder(dataFolder):
     registered_dir = os.path.join(dataFolder, 'registered')
     training_dir = os.path.join(dataFolder, 'training')
     result_dir = os.path.join(dataFolder, 'result')
+
+    if not os.path.exists(h5_path):
+        raise FileNotFoundError(f"registered.h5 not found in {dataFolder}")
 
     print(f"\n{'='*60}")
     print(f"Processing: {dataFolder}")
@@ -121,6 +168,7 @@ def process_folder(dataFolder):
 
     # --- Step 5: Copy example TIFF and cleanup ---
     print("\n[Step 5/5] Cleanup...")
+    # Copy first result TIFF to main data folder as a sample
     result_tifs = sorted(glob.glob(os.path.join(result_dir, '*.tif')))
     if result_tifs:
         example_tif = result_tifs[0]
@@ -128,10 +176,11 @@ def process_folder(dataFolder):
         shutil.copy2(example_tif, dest)
         print(f"  Copied example: {os.path.basename(example_tif)}")
 
-    shutil.rmtree(registered_dir)
-    print(f"  Deleted: {registered_dir}")
-    shutil.rmtree(result_dir)
-    print(f"  Deleted: {result_dir}")
+    # Delete all created subfolders except checkpoint/
+    for subdir in [registered_dir, training_dir, result_dir]:
+        if os.path.exists(subdir):
+            shutil.rmtree(subdir)
+            print(f"  Deleted: {subdir}")
 
     # Clean up temp config
     if os.path.exists(run_config_path):
@@ -139,15 +188,15 @@ def process_folder(dataFolder):
 
     print(f"\nDone: {dataFolder}")
     print(f"  checkpoint/  - model weights + config")
-    print(f"  training/    - training TIFF stack")
     print(f"  inference.h5 - denoised output")
+    print(f"  *.tif        - example result stack")
 
 
-def run_pipeline(folders):
-    """Run the full pipeline on all selected folders."""
+def main():
     setup_cuda()
-    total = len(folders)
-    for i, folder in enumerate(folders, 1):
+    total = len(DATA_FOLDERS)
+    print(f"FAST Pipeline: {total} folder(s) to process")
+    for i, folder in enumerate(DATA_FOLDERS, 1):
         print(f"\n{'#'*60}")
         print(f"  Folder {i}/{total}")
         print(f"{'#'*60}")
@@ -155,93 +204,6 @@ def run_pipeline(folders):
     print(f"\n{'='*60}")
     print(f"All {total} folder(s) complete!")
     print(f"{'='*60}")
-
-
-# ===== GUI =====
-class FolderSelectionGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("FAST Pipeline")
-        self.root.geometry("700x400")
-        self.folders = []
-
-        # Title
-        tk.Label(root, text="FAST Denoising Pipeline", font=("Arial", 16, "bold")).pack(pady=(10, 5))
-        tk.Label(root, text="Select folders containing registered.h5").pack()
-
-        # Button frame
-        btn_frame = tk.Frame(root)
-        btn_frame.pack(pady=10)
-
-        tk.Button(btn_frame, text="Add Folder", command=self.add_folder, width=15).pack(side=tk.LEFT, padx=5)
-        tk.Button(btn_frame, text="Remove Selected", command=self.remove_folder, width=15).pack(side=tk.LEFT, padx=5)
-
-        # Listbox with scrollbar
-        list_frame = tk.Frame(root)
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=20)
-
-        scrollbar = tk.Scrollbar(list_frame)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set, font=("Courier", 10))
-        self.listbox.pack(fill=tk.BOTH, expand=True)
-        scrollbar.config(command=self.listbox.yview)
-
-        # Run button
-        self.run_btn = tk.Button(root, text="Run Pipeline", command=self.run,
-                                 width=20, height=2, bg="#4CAF50", fg="white",
-                                 font=("Arial", 12, "bold"))
-        self.run_btn.pack(pady=15)
-
-    def add_folder(self):
-        folder = filedialog.askdirectory(title="Select data folder containing registered.h5")
-        if not folder:
-            return
-        h5_path = os.path.join(folder, 'registered.h5')
-        if not os.path.exists(h5_path):
-            messagebox.showerror("Error", f"No registered.h5 found in:\n{folder}")
-            return
-        if folder in self.folders:
-            messagebox.showinfo("Info", "Folder already in list.")
-            return
-        self.folders.append(folder)
-        self.listbox.insert(tk.END, folder)
-
-    def remove_folder(self):
-        selection = self.listbox.curselection()
-        if not selection:
-            return
-        idx = selection[0]
-        self.listbox.delete(idx)
-        self.folders.pop(idx)
-
-    def run(self):
-        if not self.folders:
-            messagebox.showwarning("Warning", "No folders selected.")
-            return
-        msg = f"Run pipeline on {len(self.folders)} folder(s)?\n\n"
-        msg += "\n".join(f"  {f}" for f in self.folders)
-        if not messagebox.askyesno("Confirm", msg):
-            return
-
-        # Disable UI during processing
-        self.run_btn.config(state=tk.DISABLED, text="Running...")
-        self.root.update()
-
-        try:
-            run_pipeline(list(self.folders))
-            messagebox.showinfo("Complete", f"Pipeline finished for {len(self.folders)} folder(s)!")
-        except Exception as e:
-            messagebox.showerror("Error", f"Pipeline failed:\n{e}")
-            raise
-        finally:
-            self.run_btn.config(state=tk.NORMAL, text="Run Pipeline")
-
-
-def main():
-    root = tk.Tk()
-    FolderSelectionGUI(root)
-    root.mainloop()
 
 
 if __name__ == '__main__':

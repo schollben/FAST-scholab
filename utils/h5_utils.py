@@ -6,14 +6,14 @@ from glob import glob
 from tqdm import tqdm
 
 
-def h5_to_tiff(h5_path, max_frames=None, chunk_size=10000, output_dir=None):
+def h5_to_tiff(h5_path, max_frames=None, chunk_size=5000, output_dir=None):
     """
     Convert H5 file to TIFF stacks in chunks.
 
     Parameters:
         h5_path (str): Path to the H5 file
         max_frames (int): Maximum number of frames to save (default: all frames)
-        chunk_size (int): Number of frames per TIFF stack (default: 10000)
+        chunk_size (int): Number of frames per TIFF stack (default: 5000)
         output_dir (str): Directory to save TIFFs (default: same dir as h5 file)
     """
     if not os.path.exists(h5_path):
@@ -50,7 +50,7 @@ def h5_to_tiff(h5_path, max_frames=None, chunk_size=10000, output_dir=None):
             chunk_output = os.path.join(save_dir, f"{base_name}_{chunk_idx+1:02d}.tif")
             print(f"\nChunk {chunk_idx+1}/{num_chunks}: Saving frames {start_frame} to {end_frame-1} to {chunk_output}")
 
-            with tifffile.TiffWriter(chunk_output, bigtiff=False, imagej=False) as tif:
+            with tifffile.TiffWriter(chunk_output, bigtiff=False, imagej=True) as tif:
                 for i in range(start_frame, end_frame):
                     if (i - start_frame) % 1000 == 0:
                         print(f"  Processing frame {i - start_frame}/{chunk_frames}...")
