@@ -15,7 +15,7 @@
 #     - All dependencies from requirements.txt installed
 #     - userparams.json configuration file present in FAST_DIR
 #     - This script should be run with the FAST environment activated
-#     - to WATCH GPU use this command in terminal: 'watch -n 1 nvidia-smi'
+#     - to WATCH GPU use this command in terminal: 'watch -n 2 nvidia-smi'
 
 # WORKFLOW:
 #     1. Convert registered.h5 to TIFF stacks for processing
@@ -52,7 +52,7 @@ from utils.h5_utils import h5_to_tiff, tif_stacks_to_h5
 # ===== DATA FOLDERS TO PROCESS =====
 # Add paths to folders containing registered.h5 (one per line)
 DATA_FOLDERS = [
-    '/mnt/bigdata/BRUKER/TSeries-04022026-1315-003/',
+    '/mnt/bigdata/SCANIMAGE/2026-04-30/expt2/',
     # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-005/',
     # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-003/',
 ]
@@ -62,8 +62,8 @@ DATA_FOLDERS = [
 FAST_DIR = '/home/schollab-gaga/Documents/FAST'
 BASE_CONFIG_PATH = os.path.join(FAST_DIR, 'userparams.json')
 # Training hyperparameters
-TRAIN_FRAMES = 1000
-MINIBATCH_SIZE = 16 
+TRAIN_FRAMES = 2000
+MINIBATCH_SIZE = 16
 BATCH_SIZE = 1
 NUM_WORKERS = 16
 SAVE_FREQ = 25
