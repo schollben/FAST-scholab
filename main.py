@@ -52,7 +52,7 @@ from utils.h5_utils import h5_to_tiff, tif_stacks_to_h5
 # ===== DATA FOLDERS TO PROCESS =====
 # Add paths to folders containing registered.h5 (one per line)
 DATA_FOLDERS = [
-    '/mnt/bigdata/BRUKER/TSeries-04022026-1315-003/',
+    '/mnt/bigdata/SCANIMAGE/TSeries-04022026-1315-003/2026-04-23/',
     # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-005/',
     # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-003/',
 ]
