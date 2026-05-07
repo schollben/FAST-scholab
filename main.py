@@ -52,22 +52,28 @@ from utils.h5_utils import h5_to_tiff, tif_stacks_to_h5
 # ===== DATA FOLDERS TO PROCESS =====
 # Add paths to folders containing registered.h5 (one per line)
 DATA_FOLDERS = [
-    '/mnt/bigdata/SCANIMAGE/TSeries-04022026-1315-003/2026-04-23/',
+    '/mnt/bigdata/SCANIMAGE/2026-05-05/expt1/',
     # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-005/',
     # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-003/',
 ]
 # ====================================
 
 # ===== CONFIGURATION =====
-FAST_DIR = '/home/schollab-gaga/Documents/FAST'
+FAST_DIR = '/home/schollab-dion/Documents/FAST-scholab/'
 BASE_CONFIG_PATH = os.path.join(FAST_DIR, 'userparams.json')
 # Training hyperparameters
 TRAIN_FRAMES = 1000
-MINIBATCH_SIZE = 16 
+MINIBATCH_SIZE = 16
 BATCH_SIZE = 1
 NUM_WORKERS = 16
 SAVE_FREQ = 25
 EPOCHS = 100
+
+# Set to True to skip Steps 1 & 2 (h5→TIFF conversion + training).
+# Use this when training already completed and you want to resume from inference.
+# registered/ and training/ dirs must already exist in each data folder,
+# and a checkpoint/ dir with a valid config.json must be present.
+SKIP_TRAINING = False
 # =========================
 
 
@@ -97,44 +103,50 @@ def process_folder(dataFolder):
     print(f"Processing: {dataFolder}")
     print(f"{'='*60}")
 
-    # --- Step 1: Convert registered.h5 to TIFF stacks ---
-    print("\n[Step 1/5] Converting registered.h5 to TIFF stacks...")
-    os.makedirs(registered_dir, exist_ok=True)
-    os.makedirs(training_dir, exist_ok=True)
-    h5_to_tiff(h5_path, output_dir=registered_dir)
+    if SKIP_TRAINING:
+        print("\n[Step 1/5] SKIPPED (SKIP_TRAINING=True)")
+        print("\n[Step 2/5] SKIPPED (SKIP_TRAINING=True)")
+        if not os.path.isdir(registered_dir):
+            raise FileNotFoundError(f"registered/ not found in {dataFolder} — cannot skip Step 1")
+    else:
+        # --- Step 1: Convert registered.h5 to TIFF stacks ---
+        print("\n[Step 1/5] Converting registered.h5 to TIFF stacks...")
+        os.makedirs(registered_dir, exist_ok=True)
+        os.makedirs(training_dir, exist_ok=True)
+        h5_to_tiff(h5_path, output_dir=registered_dir)
 
-    # Copy the first TIFF stack to training/
-    tif_files = sorted(glob.glob(os.path.join(registered_dir, '*.tif')))
-    if not tif_files:
-        raise FileNotFoundError(f"No TIFF files created in {registered_dir}")
-    first_tif = tif_files[0]
-    shutil.copy2(first_tif, os.path.join(training_dir, os.path.basename(first_tif)))
-    print(f"  Copied {os.path.basename(first_tif)} to training/")
+        # Copy the first TIFF stack to training/
+        tif_files = sorted(glob.glob(os.path.join(registered_dir, '*.tif')))
+        if not tif_files:
+            raise FileNotFoundError(f"No TIFF files created in {registered_dir}")
+        first_tif = tif_files[0]
+        shutil.copy2(first_tif, os.path.join(training_dir, os.path.basename(first_tif)))
+        print(f"  Copied {os.path.basename(first_tif)} to training/")
 
-    # --- Step 2: Train ---
-    print("\n[Step 2/5] Training...")
-    with open(BASE_CONFIG_PATH, 'r') as f:
-        params = json.load(f)
+        # --- Step 2: Train ---
+        print("\n[Step 2/5] Training...")
+        with open(BASE_CONFIG_PATH, 'r') as f:
+            params = json.load(f)
 
-    params['train_frames'] = TRAIN_FRAMES
-    params['miniBatch_size'] = MINIBATCH_SIZE
-    params['batch_size'] = BATCH_SIZE
-    params['num_workers'] = NUM_WORKERS
-    params['save_freq'] = SAVE_FREQ
-    params['epochs'] = EPOCHS
-    params['results_dir'] = dataFolder
-    params['mode'] = 'train'
+        params['train_frames'] = TRAIN_FRAMES
+        params['miniBatch_size'] = MINIBATCH_SIZE
+        params['batch_size'] = BATCH_SIZE
+        params['num_workers'] = NUM_WORKERS
+        params['save_freq'] = SAVE_FREQ
+        params['epochs'] = EPOCHS
+        params['results_dir'] = dataFolder
+        params['mode'] = 'train'
 
-    # Write a working copy of the config for this run
-    run_config_path = os.path.join(dataFolder, '_run_config.json')
-    with open(run_config_path, 'w') as f:
-        json.dump(params, f, indent=4)
+        # Write a working copy of the config for this run
+        run_config_path = os.path.join(dataFolder, '_run_config.json')
+        with open(run_config_path, 'w') as f:
+            json.dump(params, f, indent=4)
 
-    args = json2args(run_config_path)
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_ids
-    args.train_folder = training_dir
-    print(f"  Training data: {args.train_folder}")
-    goTraining(args)
+        args = json2args(run_config_path)
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_ids
+        args.train_folder = training_dir
+        print(f"  Training data: {args.train_folder}")
+        goTraining(args)
 
     # --- Step 3: Test (inference) ---
     print("\n[Step 3/5] Running inference...")
@@ -182,7 +194,8 @@ def process_folder(dataFolder):
             shutil.rmtree(subdir)
             print(f"  Deleted: {subdir}")
 
-    # Clean up temp config
+    # Clean up temp config (only exists when SKIP_TRAINING=False)
+    run_config_path = os.path.join(dataFolder, '_run_config.json')
     if os.path.exists(run_config_path):
         os.remove(run_config_path)
 
