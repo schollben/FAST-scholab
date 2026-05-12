@@ -23,6 +23,9 @@ result/
 # Logs
 *.log
 log.txt
+logs/
+_pipeline_log_*.txt
+_pipeline_status.json
 
 # Temporary files
 *.tmp

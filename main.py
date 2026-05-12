@@ -43,23 +43,89 @@ import os
 import json
 import shutil
 import glob
+import signal
+import threading
+import time
+import datetime
+import psutil
 import torch
 from train import goTraining
 from test import goTesting
 from utils.config import json2args
 from utils.h5_utils import h5_to_tiff, tif_stacks_to_h5
 
+def _log(msg, log_path=None):
+    line = f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
+    print(line)
+    if log_path:
+        with open(log_path, 'a') as f:
+            f.write(line + '\n')
+
+class MemoryMonitor:
+    """Logs RAM and GPU memory to terminal + file every `interval` seconds."""
+
+    def __init__(self, log_path, interval=30):
+        self.log_path = log_path
+        self.interval = interval
+        self._step = 'init'
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def set_step(self, step):
+        self._step = step
+
+    def start(self):
+        self._thread.start()
+
+    def stop(self):
+        self._stop.set()
+
+    def _run(self):
+        vm = psutil.virtual_memory()
+        while not self._stop.wait(self.interval):
+            ram_used = psutil.virtual_memory().used / 1e9
+            ram_total = vm.total / 1e9
+            ram_pct = psutil.virtual_memory().percent
+            if torch.cuda.is_available():
+                gpu_used = torch.cuda.memory_allocated() / 1e9
+                gpu_total = torch.cuda.get_device_properties(0).total_memory / 1e9
+                gpu_str = f"  GPU {gpu_used:.1f}/{gpu_total:.1f} GB"
+            else:
+                gpu_str = ""
+            line = f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [MEM] step={self._step}  RAM {ram_used:.1f}/{ram_total:.1f} GB ({ram_pct:.0f}%){gpu_str}\n"
+            with open(self.log_path, 'a') as f:
+                f.write(line)
+
+
 # ===== DATA FOLDERS TO PROCESS =====
 # Add paths to folders containing registered.h5 (one per line)
 DATA_FOLDERS = [
-    '/mnt/bigdata/SCANIMAGE/TSeries-04022026-1315-003/2026-04-23/',
-    # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-005/',
-    # '/mnt/bigdata/BRUKER/TSeries-07132025-1042-003/',
+      '/mnt/bigdata/BRUKER/TSeries-04022026-1315-005/',
+    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-001/',
+    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-003/',
+    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-004/',
+    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-005/',
+    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-006/',
+    # '/mnt/bigdata/BRUKER/TSeries-04152026-1333-001/',
+    # '/mnt/bigdata/BRUKER/TSeries-04152026-1636-002/',
+    # '/mnt/bigdata/BRUKER/TSeries-04152026-1636-003/',
+    # '/mnt/bigdata/BRUKER/TSeries-04152026-1636-004/',
+    # '/mnt/bigdata/BRUKER/TSeries-04302026-1323-001/',
+    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-001/',
+    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-002/',
+    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-004/',
+    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-005/',
+    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-006/',
+    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-007/',
+    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-008/',
+    # '/mnt/bigdata/BRUKER/TSeries-05062026-1510-002/',
+    # '/mnt/bigdata/BRUKER/TSeries-05062026-1510-003/',
+    # '/mnt/bigdata/BRUKER/TSeries-05062026-1510-004/',
 ]
 # ====================================
 
 # ===== CONFIGURATION =====
-FAST_DIR = '/home/schollab-dion/Documents/FAST-scholab/'
+FAST_DIR = '/home/schollab-gaga/Documents/FAST/'
 BASE_CONFIG_PATH = os.path.join(FAST_DIR, 'userparams.json')
 # Training hyperparameters
 TRAIN_FRAMES = 1000
@@ -84,7 +150,7 @@ def setup_cuda():
     torch.backends.cudnn.benchmark = True
 
 
-def process_folder(dataFolder):
+def process_folder(dataFolder, monitor):
     """
     Run the full FAST pipeline on a single data folder.
 
@@ -95,22 +161,24 @@ def process_folder(dataFolder):
     registered_dir = os.path.join(dataFolder, 'registered')
     training_dir = os.path.join(dataFolder, 'training')
     result_dir = os.path.join(dataFolder, 'result')
+    log_path = monitor.log_path
 
     if not os.path.exists(h5_path):
         raise FileNotFoundError(f"registered.h5 not found in {dataFolder}")
 
-    print(f"\n{'='*60}")
-    print(f"Processing: {dataFolder}")
-    print(f"{'='*60}")
+    _log(f"\n{'='*60}", log_path)
+    _log(f"Processing: {dataFolder}", log_path)
+    _log(f"{'='*60}", log_path)
 
     if SKIP_TRAINING:
-        print("\n[Step 1/5] SKIPPED (SKIP_TRAINING=True)")
-        print("\n[Step 2/5] SKIPPED (SKIP_TRAINING=True)")
+        _log("[Step 1/5] SKIPPED (SKIP_TRAINING=True)", log_path)
+        _log("[Step 2/5] SKIPPED (SKIP_TRAINING=True)", log_path)
         if not os.path.isdir(registered_dir):
             raise FileNotFoundError(f"registered/ not found in {dataFolder} — cannot skip Step 1")
     else:
         # --- Step 1: Convert registered.h5 to TIFF stacks ---
-        print("\n[Step 1/5] Converting registered.h5 to TIFF stacks...")
+        monitor.set_step('step1_tiff_export')
+        _log("[Step 1/5] Converting registered.h5 to TIFF stacks...", log_path)
         os.makedirs(registered_dir, exist_ok=True)
         os.makedirs(training_dir, exist_ok=True)
         h5_to_tiff(h5_path, output_dir=registered_dir)
@@ -121,10 +189,11 @@ def process_folder(dataFolder):
             raise FileNotFoundError(f"No TIFF files created in {registered_dir}")
         first_tif = tif_files[0]
         shutil.copy2(first_tif, os.path.join(training_dir, os.path.basename(first_tif)))
-        print(f"  Copied {os.path.basename(first_tif)} to training/")
+        _log(f"  Copied {os.path.basename(first_tif)} to training/", log_path)
 
         # --- Step 2: Train ---
-        print("\n[Step 2/5] Training...")
+        monitor.set_step('step2_training')
+        _log("[Step 2/5] Training...", log_path)
         with open(BASE_CONFIG_PATH, 'r') as f:
             params = json.load(f)
 
@@ -145,11 +214,12 @@ def process_folder(dataFolder):
         args = json2args(run_config_path)
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_ids
         args.train_folder = training_dir
-        print(f"  Training data: {args.train_folder}")
+        _log(f"  Training data: {args.train_folder}", log_path)
         goTraining(args)
 
     # --- Step 3: Test (inference) ---
-    print("\n[Step 3/5] Running inference...")
+    monitor.set_step('step3_inference')
+    _log("[Step 3/5] Running inference...", log_path)
     # Find the latest checkpoint config saved by goTraining
     checkpoint_root = os.path.join(dataFolder, 'checkpoint')
     subdirs = sorted([d for d in os.listdir(checkpoint_root)
@@ -157,7 +227,7 @@ def process_folder(dataFolder):
     if not subdirs:
         raise FileNotFoundError(f"No checkpoint subdirectories in {checkpoint_root}")
     test_config_path = os.path.join(checkpoint_root, subdirs[-1], 'config.json')
-    print(f"  Using checkpoint config: {test_config_path}")
+    _log(f"  Using checkpoint config: {test_config_path}", log_path)
 
     # Ensure results_dir is set correctly in the checkpoint config
     with open(test_config_path, 'r') as f:
@@ -168,55 +238,102 @@ def process_folder(dataFolder):
 
     args = json2args(test_config_path)
     args.test_path = registered_dir
-    print(f"  Test data: {args.test_path}")
+    _log(f"  Test data: {args.test_path}", log_path)
     goTesting(args)
 
     # --- Step 4: Convert result TIFFs to inference.h5 ---
-    print("\n[Step 4/5] Converting results to inference.h5...")
+    monitor.set_step('step4_h5_export')
+    _log("[Step 4/5] Converting results to inference.h5...", log_path)
     inference_h5_path = os.path.join(dataFolder, 'inference.h5')
     tif_stacks_to_h5(result_dir, inference_h5_path, h5_key='mov',
                      delete_tiffs=False, frame_offset=False)
-    print(f"  Saved: {inference_h5_path}")
+    _log(f"  Saved: {inference_h5_path}", log_path)
 
     # --- Step 5: Copy example TIFF and cleanup ---
-    print("\n[Step 5/5] Cleanup...")
+    monitor.set_step('step5_cleanup')
+    _log("[Step 5/5] Cleanup...", log_path)
     # Copy first result TIFF to main data folder as a sample
     result_tifs = sorted(glob.glob(os.path.join(result_dir, '*.tif')))
     if result_tifs:
         example_tif = result_tifs[0]
         dest = os.path.join(dataFolder, os.path.basename(example_tif))
         shutil.copy2(example_tif, dest)
-        print(f"  Copied example: {os.path.basename(example_tif)}")
+        _log(f"  Copied example: {os.path.basename(example_tif)}", log_path)
 
     # Delete all created subfolders except checkpoint/
     for subdir in [registered_dir, training_dir, result_dir]:
         if os.path.exists(subdir):
             shutil.rmtree(subdir)
-            print(f"  Deleted: {subdir}")
+            _log(f"  Deleted: {subdir}", log_path)
 
     # Clean up temp config (only exists when SKIP_TRAINING=False)
     run_config_path = os.path.join(dataFolder, '_run_config.json')
     if os.path.exists(run_config_path):
         os.remove(run_config_path)
 
-    print(f"\nDone: {dataFolder}")
-    print(f"  checkpoint/  - model weights + config")
-    print(f"  inference.h5 - denoised output")
-    print(f"  *.tif        - example result stack")
+    _log(f"Done: {dataFolder}", log_path)
+    _log(f"  checkpoint/  - model weights + config", log_path)
+    _log(f"  inference.h5 - denoised output", log_path)
+    _log(f"  *.tif        - example result stack", log_path)
 
 
 def main():
     setup_cuda()
+
+    # Single log file for the whole run, named by start time
+    run_ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    logs_dir = os.path.join(FAST_DIR, 'logs')
+    os.makedirs(logs_dir, exist_ok=True)
+    log_path = os.path.join(logs_dir, f'_pipeline_log_{run_ts}.txt')
+
+    monitor = MemoryMonitor(log_path, interval=30)
+    monitor.start()
+
+    # Write a clean-exit marker on normal exit; its absence means we were killed
+    clean_exit = {'status': 'running', 'started': run_ts}
+    marker_path = os.path.join(logs_dir, '_pipeline_status.json')
+
+    def _write_marker(status, extra=None):
+        clean_exit['status'] = status
+        clean_exit['updated'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        if extra:
+            clean_exit.update(extra)
+        with open(marker_path, 'w') as f:
+            json.dump(clean_exit, f, indent=2)
+
+    _write_marker('running')
+
+    def _on_signal(signum, _):
+        _log(f"Caught signal {signum} — pipeline interrupted", log_path)
+        _write_marker('interrupted', {'signal': signum})
+        monitor.stop()
+        raise SystemExit(1)
+
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(sig, _on_signal)
+
     total = len(DATA_FOLDERS)
-    print(f"FAST Pipeline: {total} folder(s) to process")
-    for i, folder in enumerate(DATA_FOLDERS, 1):
-        print(f"\n{'#'*60}")
-        print(f"  Folder {i}/{total}")
-        print(f"{'#'*60}")
-        process_folder(folder)
-    print(f"\n{'='*60}")
-    print(f"All {total} folder(s) complete!")
-    print(f"{'='*60}")
+    _log(f"FAST Pipeline: {total} folder(s) to process  |  log: {log_path}", log_path)
+
+    try:
+        for i, folder in enumerate(DATA_FOLDERS, 1):
+            _log(f"\n{'#'*60}", log_path)
+            _log(f"  Folder {i}/{total}: {folder}", log_path)
+            _log(f"{'#'*60}", log_path)
+            clean_exit['current_folder'] = folder
+            _write_marker('running')
+            process_folder(folder, monitor)
+            _write_marker('running', {'last_completed_folder': folder})
+        _log(f"\n{'='*60}", log_path)
+        _log(f"All {total} folder(s) complete!", log_path)
+        _log(f"{'='*60}", log_path)
+        _write_marker('complete')
+    except Exception as e:
+        _log(f"ERROR: {e}", log_path)
+        _write_marker('error', {'error': str(e)})
+        raise
+    finally:
+        monitor.stop()
 
 
 if __name__ == '__main__':
