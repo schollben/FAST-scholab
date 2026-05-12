@@ -87,8 +87,7 @@ TRAIN_FRAMES = 2000
 MINIBATCH_SIZE = 16 
 BATCH_SIZE = 1
 NUM_WORKERS = 16
-EPOCHS = 5
-SAVE_FREQ = EPOCHS
+EPOCHS = 25
 
 # Set to True to skip Steps 1 & 2 (h5→TIFF conversion + training).
 # Use this when training already completed and you want to resume from inference.
@@ -198,7 +197,7 @@ def process_folder(dataFolder, monitor):
         params['miniBatch_size'] = MINIBATCH_SIZE
         params['batch_size'] = BATCH_SIZE
         params['num_workers'] = NUM_WORKERS
-        params['save_freq'] = SAVE_FREQ
+        params['save_freq'] = EPOCHS
         params['epochs'] = EPOCHS
         params['results_dir'] = dataFolder
         params['mode'] = 'train'
