@@ -45,7 +45,6 @@ import shutil
 import glob
 import signal
 import threading
-import time
 import datetime
 import psutil
 import torch
@@ -53,6 +52,51 @@ from train import goTraining
 from test import goTesting
 from utils.config import json2args
 from utils.h5_utils import h5_to_tiff, tif_stacks_to_h5
+
+# ===== DATA FOLDERS TO PROCESS =====
+# Add paths to folders containing registered.h5 (one per line)
+DATA_FOLDERS = [
+    '/mnt/bigdata/BRUKER/TSeries-04032026-1406-001/',
+    '/mnt/bigdata/BRUKER/TSeries-04032026-1406-003/',
+    '/mnt/bigdata/BRUKER/TSeries-04032026-1406-004/',
+    '/mnt/bigdata/BRUKER/TSeries-04032026-1406-005/',
+    '/mnt/bigdata/BRUKER/TSeries-04032026-1406-006/',
+    '/mnt/bigdata/BRUKER/TSeries-04152026-1333-001/',
+    '/mnt/bigdata/BRUKER/TSeries-04152026-1636-002/',
+    '/mnt/bigdata/BRUKER/TSeries-04152026-1636-003/',
+    '/mnt/bigdata/BRUKER/TSeries-04152026-1636-004/',
+    '/mnt/bigdata/BRUKER/TSeries-04302026-1323-001/',
+    '/mnt/bigdata/BRUKER/TSeries-05012026-1510-001/',
+    '/mnt/bigdata/BRUKER/TSeries-05012026-1510-002/',
+    '/mnt/bigdata/BRUKER/TSeries-05012026-1510-004/',
+    '/mnt/bigdata/BRUKER/TSeries-05012026-1510-005/',
+    '/mnt/bigdata/BRUKER/TSeries-05012026-1510-006/',
+    '/mnt/bigdata/BRUKER/TSeries-05012026-1510-007/',
+    '/mnt/bigdata/BRUKER/TSeries-05012026-1510-008/',
+    '/mnt/bigdata/BRUKER/TSeries-05062026-1510-002/',
+    '/mnt/bigdata/BRUKER/TSeries-05062026-1510-003/',
+    '/mnt/bigdata/BRUKER/TSeries-05062026-1510-004/',
+]
+# ====================================
+
+# ===== CONFIGURATION =====
+FAST_DIR = '/home/schollab-gaga/Documents/FAST/'
+BASE_CONFIG_PATH = os.path.join(FAST_DIR, 'userparams.json')
+# Training hyperparameters
+TRAIN_FRAMES = 2000
+MINIBATCH_SIZE = 16 
+BATCH_SIZE = 1
+NUM_WORKERS = 16
+EPOCHS = 5
+SAVE_FREQ = EPOCHS
+
+# Set to True to skip Steps 1 & 2 (h5→TIFF conversion + training).
+# Use this when training already completed and you want to resume from inference.
+# registered/ and training/ dirs must already exist in each data folder,
+# and a checkpoint/ dir with a valid config.json must be present.
+SKIP_TRAINING = False
+# =========================
+
 
 def _log(msg, log_path=None):
     line = f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
@@ -95,53 +139,6 @@ class MemoryMonitor:
             line = f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [MEM] step={self._step}  RAM {ram_used:.1f}/{ram_total:.1f} GB ({ram_pct:.0f}%){gpu_str}\n"
             with open(self.log_path, 'a') as f:
                 f.write(line)
-
-
-# ===== DATA FOLDERS TO PROCESS =====
-# Add paths to folders containing registered.h5 (one per line)
-DATA_FOLDERS = [
-      '/mnt/bigdata/BRUKER/TSeries-04022026-1315-005/',
-    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-001/',
-    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-003/',
-    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-004/',
-    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-005/',
-    # '/mnt/bigdata/BRUKER/TSeries-04032026-1406-006/',
-    # '/mnt/bigdata/BRUKER/TSeries-04152026-1333-001/',
-    # '/mnt/bigdata/BRUKER/TSeries-04152026-1636-002/',
-    # '/mnt/bigdata/BRUKER/TSeries-04152026-1636-003/',
-    # '/mnt/bigdata/BRUKER/TSeries-04152026-1636-004/',
-    # '/mnt/bigdata/BRUKER/TSeries-04302026-1323-001/',
-    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-001/',
-    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-002/',
-    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-004/',
-    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-005/',
-    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-006/',
-    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-007/',
-    # '/mnt/bigdata/BRUKER/TSeries-05012026-1510-008/',
-    # '/mnt/bigdata/BRUKER/TSeries-05062026-1510-002/',
-    # '/mnt/bigdata/BRUKER/TSeries-05062026-1510-003/',
-    # '/mnt/bigdata/BRUKER/TSeries-05062026-1510-004/',
-]
-# ====================================
-
-# ===== CONFIGURATION =====
-FAST_DIR = '/home/schollab-gaga/Documents/FAST/'
-BASE_CONFIG_PATH = os.path.join(FAST_DIR, 'userparams.json')
-# Training hyperparameters
-TRAIN_FRAMES = 1000
-MINIBATCH_SIZE = 16 
-BATCH_SIZE = 1
-NUM_WORKERS = 16
-SAVE_FREQ = 25
-EPOCHS = 100
-
-# Set to True to skip Steps 1 & 2 (h5→TIFF conversion + training).
-# Use this when training already completed and you want to resume from inference.
-# registered/ and training/ dirs must already exist in each data folder,
-# and a checkpoint/ dir with a valid config.json must be present.
-SKIP_TRAINING = False
-# =========================
-
 
 def setup_cuda():
     """Configure CUDA environment."""
