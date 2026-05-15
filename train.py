@@ -45,7 +45,8 @@ def goTraining(args):
                             pin_memory=True)
 
     # Define checkpoint directory in the dataset folder (parent of train_folder)
-    data_root = os.path.dirname(os.path.normpath(args.train_folder))
+    # Use results_dir so checkpoint lands on the permanent drive, not tmpfs scratch
+    data_root = getattr(args, 'results_dir', None) or os.path.dirname(os.path.normpath(args.train_folder))
     checkpoint_dir = os.path.join(data_root, 'checkpoint',
                                   datetime.datetime.now().strftime("%Y%m%d%H%M"))
     if not os.path.exists(checkpoint_dir):
